@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta charset="UTF-8">
+<title>8oMATE</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<!-- Thinking overlay -->
+<div id="thinkingOverlay">
+<div class="thinkingBox">
+<img src="logo.png" id="thinkingLogo">
+<div class="thinkingText">
+DARSHAN is thinking...
+</div>
+</div>
+</div>
+
+
+<!-- Intro animation -->
+<div id="introScreen">
+<div class="introContainer">
+<img src="logo.png" id="introLogo">
+<div id="introTyping"></div>
+</div>
+</div>
+
+
+<!-- MAIN PAGE -->
+<div id="mainPage">
+
+<header class="navbar">
+
+<div class="brandBlock">
+<img src="logo.png" class="logo">
+
+<div class="brandText">
+<div class="brand">8oMATE</div>
+</div>
+
+</div>
+
+</header>
+
+
+
+<!-- running ticker -->
+<div class="ticker">
+<div class="tickerText">
+Introducing DARSHAN from 8oMATE • AI multimodal video intelligence • Intelligent event detection • Get insights from hours of footage in seconds
+</div>
+</div>
+
+
+
+<!-- DARSHAN definition (CENTER AREA) -->
+<div class="darshanHero">
+<div class="darshanMain">
+<span class="darshanName">DARSHAN</span>
+<span class="darshanDef">• Deep Audio-Video Retrieval for Semantic Hybrid Answering Network</span>
+</div>
+
+
+<div class="darshanTagline">
+Making CCTVs intelligent
+</div>
+</div>
+
+
+
+
+
+
+
+
+<div class="center">
+
+<h1 class="title">Select video to ask questions</h1>
+
+
+
+<div class="videoSelector">
+
+<div class="videoLabel">
+Selected footage: <span id="selectedVideo">None</span>
+</div>
+
+<div class="videoDropdown">
+
+<button class="videoCard" data-video="day1">Day1</button>
+<button class="videoCard" data-video="day2">Day2</button>
+<button class="videoCard" data-video="day3">Day3</button>
+<button class="videoCard" data-video="day4">Day4</button>
+<button class="videoCard" data-video="day5">Day5</button>
+
+<button class="videoCard placeholder">DayN (illustration)</button>
+<button class="videoCard placeholder">DayN (illustration)</button>
+
+</div>
+
+</div>
+
+
+
+<div class="searchBox">
+<input id="question" placeholder="Ask anything about the video..." />
+<button id="mic">🎤</button>
+</div>
+
+<div class="buttons">
+
+<button id="search">
+Search
+</button>
+
+<button id="reset">
+Reset
+</button>
+
+</div>
+
+<div id="answer"></div>
+
+<div id="answerModal">
+<div class="answerWindow">
+
+<button id="closeAnswer">✕</button>
+
+<div id="modalAnswer"></div>
+
+<button id="modalReset">Reset</button>
+
+</div>
+</div>
+
+
+
+
+
+
+
+
+</div>
+
+</div>
+
+
+<script src="script.js"></script>
+
+<footer class="footer">
+© All rights reserved • 8oMATE 2026
+</footer>
+
+</body>
+
+</html>
