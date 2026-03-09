@@ -85,12 +85,30 @@ Example timeline entry:
 
 ```json
 {
- "start": 0,
- "end": 2,
- "visual": "three people gathered around a computer",
- "speech": "hello",
- "sounds": "tick-tock, music"
-}
+    "start": 0,
+    "end": 2,
+    "visual": "Three individuals huddle around a computer, discussing while pointing at the monitor.",
+    "speech": "\u041a\u0430\u0440\u0430\u0441\u0435\u0432\u043a\u0430.",
+    "sounds": "\"Tick-tock\", \"Tick\", \"Music\"",
+    "scene": {
+      "actors": [
+        "individual 1",
+        "individual 2",
+        "individual 3"
+      ],
+      "actions": [
+        "huddle",
+        "discuss",
+        "point"
+      ],
+      "objects": [
+        "computer",
+        "monitor"
+      ],
+      "location": ""
+    },
+    "event_summary": "Actors: individual 1, individual 2, individual 3\nActions: huddle, discuss, point\nObjects: computer, monitor\nLocation:"
+  }
 ```
 
 Two timeline files are typically generated:
@@ -162,5 +180,6 @@ Future edge deployments aim to support:
 - local video processing
 - user-controlled storage
 - on-device inference
+
 
 This enables the development of intelligent edge-based camera systems that maintain user privacy.
