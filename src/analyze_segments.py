@@ -98,7 +98,7 @@ if __name__ == "__main__":
     from temporal_segments import segment_video  # import segmentation function
 
     # Cut video into small time segments
-    segs = segment_video("video2.mp4")
+    segs = segment_video("video.mp4")
 
     timeline = []  # stores full video understanding over time
 
