@@ -21,10 +21,19 @@ collection = db.get_collection("video_segments_multi")
 print("Collection count:", collection.count())
 
 
+# ---------- EMBED QUERY ----------
 def embed_query(text):
 
+    # enrich query slightly so CLIP matches scene/event text better
+    enriched = f"""
+User query: {text}
+
+Possible elements to match:
+actors, actions, objects, location, sounds, speech, events
+"""
+
     inputs = processor(
-        text=[text],
+        text=[enriched],
         return_tensors="pt",
         padding=True,
         truncation=True
@@ -39,6 +48,7 @@ def embed_query(text):
     return emb.tolist()
 
 
+# ---------- RETRIEVE SEGMENTS ----------
 def retrieve_segments(question, video_id, top_k=10):
 
     q_emb = embed_query(question)
@@ -49,9 +59,70 @@ def retrieve_segments(question, video_id, top_k=10):
         where={"video_id": video_id}
     )
 
-    return results["metadatas"][0]
+    matches = results["metadatas"][0]
+
+    # ---------- TEMPORAL EXPANSION ----------
+    windows = []
+
+    for m in matches:
+        start = m["start"]
+        end = m["end"]
+
+        windows.append((start - 20, end + 20))
+
+    # ---------- GET ALL SEGMENTS FROM VIDEO ----------
+    all_segments = collection.get(
+        where={"video_id": video_id}
+    )["metadatas"]
+
+    expanded = []
+
+    for seg in all_segments:
+
+        s = seg["start"]
+        e = seg["end"]
+
+        for w_start, w_end in windows:
+
+            if e >= w_start and s <= w_end:
+                expanded.append(seg)
+                break
+
+    # ---------- DEDUPLICATE ----------
+    unique = {}
+    for seg in expanded:
+        key = (seg["start"], seg["end"])
+        unique[key] = seg
+
+    expanded = list(unique.values())
+
+    # ---------- SORT CHRONOLOGICALLY ----------
+    expanded.sort(key=lambda x: x["start"])
+
+    return expanded
 
 
+# ---------- BUILD CONTEXT ----------
+def build_context(matches):
+
+    context = ""
+
+    for m in matches:
+
+        event = m.get("event_summary", "")
+
+        context += (
+            f"Time {m['start']}–{m['end']} sec\n"
+            f"Visual: {m['visual']}\n"
+            f"Speech: {m['speech']}\n"
+            f"Sounds: {m['sounds']}\n"
+            f"Event: {event}\n\n"
+        )
+
+    return context
+
+
+# ---------- ASK QUESTION ----------
 def ask_question(question, video_id):
 
     matches = retrieve_segments(question, video_id)
@@ -59,38 +130,41 @@ def ask_question(question, video_id):
     if not matches:
         return "Not observed in selected video."
 
-    context = ""
-
-    for m in matches:
-        context += (
-            f"Time {m['start']}–{m['end']} sec:\n"
-            f"Visual: {m['visual']}\n"
-            f"Speech: {m['speech']}\n"
-            f"Sounds: {m['sounds']}\n\n"
-        )
+    context = build_context(matches)
 
     prompt = f"""
-User asked: {question}
+You are analyzing a timeline of a video.
 
-Video: {video_id}
+User Question:
+{question}
 
-Relevant observed segments:
+Video ID:
+{video_id}
+
+Timeline segments:
 
 {context}
 
-Answer clearly:
-- Tell WHEN the event happened (exact timestamp)
-- Explain briefly
-- If multiple → list all times
-- Do NOT guess outside given segments
+Instructions:
 
-Format the response like this:
+1. Use ONLY the provided segments.
+2. Identify events relevant to the question.
+3. Track actors/actions across time if needed.
+4. Provide timestamps.
+5. If multiple events exist, list them.
 
-Event 1: Time <start–end sec>
-<your response>
+Response format:
 
-Event 2: Time <start–end sec>
-<your response>
+Event 1:
+Time: <start–end sec>
+Explanation:
+
+Event 2:
+Time: <start–end sec>
+Explanation:
+
+Final reasoning:
+Explain how the events relate to the question.
 """
 
     response = client.chat.completions.create(
@@ -102,6 +176,7 @@ Event 2: Time <start–end sec>
     return response.choices[0].message.content
 
 
+# ---------- INTERACTIVE LOOP ----------
 if __name__ == "__main__":
 
     while True:
@@ -112,4 +187,6 @@ if __name__ == "__main__":
         if q.lower() == "exit":
             break
 
-        print("\nAnswer:", ask_question(q, video_id), "\n")
+        print("\nAnswer:\n")
+        print(ask_question(q, video_id))
+        print("\n")
