@@ -15,6 +15,7 @@ client = chromadb.PersistentClient(path="chroma_db")
 collection = client.get_or_create_collection("video_segments_multi")
 
 
+# ---------- TEXT EMBEDDING ----------
 def embed_text(text):
 
     inputs = processor(
@@ -33,41 +34,81 @@ def embed_text(text):
     return emb.tolist()
 
 
+# ---------- FRAME EMBEDDING ----------
 def embed_frame(video_path):
 
     cap = cv2.VideoCapture(video_path)
-    ret, frame = cap.read()
+
+    embeddings = []
+
+    while True:
+
+        ret, frame = cap.read()
+
+        if not ret:
+            break
+
+        image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+
+        inputs = processor(images=image, return_tensors="pt").to(device)
+
+        with torch.no_grad():
+            features = model.get_image_features(**inputs)
+
+        emb = features[0].cpu().numpy()
+        emb = emb / np.linalg.norm(emb)
+
+        embeddings.append(emb)
+
     cap.release()
 
-    if not ret:
+    if len(embeddings) == 0:
         return None
 
-    image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+    avg_emb = np.mean(embeddings, axis=0)
+    avg_emb = avg_emb / np.linalg.norm(avg_emb)
 
-    inputs = processor(images=image, return_tensors="pt").to(device)
-
-    with torch.no_grad():
-        features = model.get_image_features(**inputs)
-
-    emb = features[0].cpu().numpy()
-    emb = emb / np.linalg.norm(emb)
-
-    return emb.tolist()
+    return avg_emb.tolist()
 
 
 # ---------- LOAD TIMELINE ----------
-with open("timeline.json","r") as f:
+with open("timeline.json", "r") as f:
     timeline = json.load(f)
 
 
 video_id = input("Enter video ID (example: day1 or day2): ")
 
-
 count = 0
+
 
 for i, seg in enumerate(timeline):
 
-    text = f"{seg['visual']} {seg['speech']} {seg['sounds']}"
+    # ----- structured scene info -----
+    actors = ", ".join(seg.get("scene", {}).get("actors", []))
+    actions = ", ".join(seg.get("scene", {}).get("actions", []))
+    objects = ", ".join(seg.get("scene", {}).get("objects", []))
+    location = seg.get("scene", {}).get("location", "")
+
+    event_summary = seg.get("event_summary", "")
+
+    # ----- build strong semantic text -----
+    text = f"""
+Visual description: {seg['visual']}
+
+Speech: {seg['speech']}
+
+Sounds: {seg['sounds']}
+
+Actors present: {actors}
+
+Actions happening: {actions}
+
+Objects involved: {objects}
+
+Location: {location}
+
+Event summary: {event_summary}
+"""
 
     text_embedding = embed_text(text)
 
@@ -80,9 +121,11 @@ for i, seg in enumerate(timeline):
         "end": seg["end"],
         "visual": seg["visual"],
         "speech": seg["speech"],
-        "sounds": seg["sounds"]
+        "sounds": seg["sounds"],
+        "event_summary": event_summary
     }
 
+    # ----- store text embedding -----
     collection.add(
         ids=[f"{video_id}_text_{i}"],
         embeddings=[text_embedding],
@@ -91,6 +134,7 @@ for i, seg in enumerate(timeline):
 
     count += 1
 
+    # ----- store frame embedding -----
     if frame_embedding is not None:
 
         collection.add(
