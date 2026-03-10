@@ -323,8 +323,6 @@ Current challenges include:
 * hardware constraints for edge deployment
 * limited availability of unified multimodal models
 
-See **docs/LIMITATIONS.md**.
-
 ---
 
 # Contributing
